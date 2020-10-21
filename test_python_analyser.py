@@ -26,7 +26,8 @@ def test_count_code_lines():
 
 def test_count_words():
     assert python_analyser.count_words("simple_file.py") == 11
-    assert python_analyser.count_words("to_analyse.py") == 1167
+    assert python_analyser.count_words("to_analyse.py") == 1088
+    assert python_analyser.count_words("simple_file2.py") == 6
 
 
 def test_count_word():

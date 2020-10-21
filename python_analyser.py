@@ -54,35 +54,32 @@ def count_code_lines(filename):
 
 def remove_no_words(words):
     result = []
+    no_words = ['', '\n', ":", ";", "+", "-", "*", "/", "#", ":\n", '==', '!=', '+=', '-=', '/=', '*=', '%', '=']
     for word in words:
-        if word != "" and word != "\n" and word != ":" and word != ";" and word != "+" \
-                and word != "-" and word != "*" and word != "/" and word != "#" and word != ":\n" \
-                and not re.match(r"^[-]*$", word) and word != '==' and word != '!=' and word != '+=' \
-                and word != '-=' and word != '/=' and word != '*=' and word != '%':
+        if word not in no_words and not re.match(r"^[-]*$", word):
             result.append(word)
     return result
 
 
 def split_connected_words(words):
     result = []
+    signs = ['(', ')', '[', ']', '{', '}', '.', ':']
     for word in words:
-        if "(" in word:
-            result.extend(word.split("("))
-        elif ")" in word:
-            result.extend(word.split(")"))
-        elif "[" in word:
-            result.extend(word.split("["))
-        elif "]" in word:
-            result.extend(word.split("]"))
-        elif "{" in word:
-            result.extend(word.split("{"))
-        elif "}" in word:
-            result.extend(word.split("}"))
-        elif "." in word:
-            result.extend(word.split("."))
-        elif ":" in word:
-            result.extend(word.split(":"))
-        else:
+        is_added = False
+        for sign in signs:
+            if sign in word:
+                result.extend(word.split(sign))
+                is_added = True
+                break
+        if not is_added:
+            result.append(word)
+    return result
+
+
+def remove_digits(words):
+    result = []
+    for word in words:
+        if not word.isdigit():
             result.append(word)
     return result
 
@@ -92,12 +89,13 @@ def count_words(filename):
     counter = 0
     with open(filename, 'r') as file:
         for line in file.readlines():
-            temp_line = line.split(" ")
+            temp_line = line.replace("\n", '')
+            temp_line = temp_line.split(" ")
 
-            words = remove_no_words(temp_line)
+            words = split_connected_words(temp_line)
             words = split_connected_words(words)
             words = remove_no_words(words)
-
+            words = remove_digits(words)
             for word in words:
                 counter += 1
     return counter
@@ -117,8 +115,14 @@ def count_comment_words(filename):
     counter = 0
     with open(filename) as file:
         for line in file.readlines():
-            if re.match(r"^[ ]*#", line) or line[0] == "#":
+            if re.match(r"^[ ]*#", line):
                 words = line.split(" ")
+                for word in words:
+                    if word != '' and word != '#':
+                        counter += 1
+            elif "#" in line:
+                words = line.split("#")
+                words = words.pop(0)
                 for word in words:
                     if word != '' and word != '#':
                         counter += 1
@@ -132,6 +136,11 @@ def count_syntax(filename, syntax_word):
     counter = 0
     with open(filename, 'r') as file:
         for line in file.readlines():
-            if not re.match(r"^[ ]*#", line) or line[0] != "#":
+            if not re.match(r"^[ ]*#", line) and '#' in line: # -> while True: # comment after syntax words
+                sentence = line.split("#").pop(1)
+                temp_line = sentence[0]
+                counter += len(re.findall(syntax_word, temp_line))
+            elif not re.match(r"^[ ]*#", line): # -> # all line in comment
                 counter += len(re.findall(syntax_word, line))
+
     return counter
